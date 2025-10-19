@@ -1,0 +1,29 @@
+# Archivos compilados
+target/
+!target/*.jar
+
+# Configuración de IDEs
+.idea
+.vscode
+*.iml
+
+# Git
+.git
+.gitignore
+
+# Documentación
+README.md
+*.md
+
+# Variables de entorno
+.env
+
+# Logs
+*.log
+
+# Maven wrapper jar
+.mvn/wrapper/maven-wrapper.jar
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
