@@ -52,7 +52,7 @@ public class UserService {
     @Transactional
     public void update(Integer id, UpdateRequest request) {
         User user = findById(id);
-        
+
         if (!user.getEmail().equals(request.email())) {
             if (userRepository.existsByEmailAndIdNot(request.email(), id)) {
                 throw new BadRequestException("El email ya está registrado");

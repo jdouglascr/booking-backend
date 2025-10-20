@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -40,7 +41,7 @@ public class BusinessHourService {
     }
 
     @Transactional
-    public Response create(CreateRequest request) {
+    public void create(CreateRequest request) {
         validateBusinessHours(request.startTime(), request.endTime());
 
         if (businessHourRepository.existsByDayOfWeek(request.dayOfWeek())) {
@@ -53,12 +54,11 @@ public class BusinessHourService {
                 .endTime(request.endTime())
                 .build();
 
-        BusinessHour saved = businessHourRepository.save(businessHour);
-        return Response.fromEntity(saved);
+        businessHourRepository.save(businessHour);
     }
 
     @Transactional
-    public Response update(Integer id, UpdateRequest request) {
+    public void update(Integer id, UpdateRequest request) {
         validateBusinessHours(request.startTime(), request.endTime());
 
         BusinessHour businessHour = businessHourRepository.findById(id)
@@ -67,8 +67,7 @@ public class BusinessHourService {
         businessHour.setStartTime(request.startTime());
         businessHour.setEndTime(request.endTime());
 
-        BusinessHour updated = businessHourRepository.save(businessHour);
-        return Response.fromEntity(updated);
+        businessHourRepository.save(businessHour);
     }
 
     @Transactional
@@ -78,7 +77,7 @@ public class BusinessHourService {
         businessHourRepository.delete(businessHour);
     }
 
-    private void validateBusinessHours(java.time.LocalTime startTime, java.time.LocalTime endTime) {
+    private void validateBusinessHours(LocalTime startTime, LocalTime endTime) {
         if (startTime == null && endTime == null) {
             return;
         }

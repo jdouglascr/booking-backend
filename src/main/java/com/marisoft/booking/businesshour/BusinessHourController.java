@@ -48,17 +48,19 @@ public class BusinessHourController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Response createBusinessHour(@Valid @RequestBody CreateRequest request) {
-        return businessHourService.create(request);
+    public MessageResponse createBusinessHour(@Valid @RequestBody CreateRequest request) {
+        businessHourService.create(request);
+        return new MessageResponse("Horario creado exitosamente");
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public Response updateBusinessHour(
+    public MessageResponse updateBusinessHour(
             @PathVariable Integer id,
             @Valid @RequestBody UpdateRequest request
     ) {
-        return businessHourService.update(id, request);
+        businessHourService.update(id, request);
+        return new MessageResponse("Horario actualizado exitosamente");
     }
 
     @PreAuthorize("hasRole('ADMIN')")
