@@ -1,4 +1,4 @@
-package com.marisoft.booking.business;
+package com.marisoft.booking.website.dto;
 
 import com.marisoft.booking.businesshour.BusinessHour;
 
@@ -26,24 +26,15 @@ public record PublicBusinessDto(
         private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
         public static BusinessHourDto fromEntity(BusinessHour businessHour) {
-            String hours;
-            boolean isOpen;
-
             if (businessHour.getStartTime() == null || businessHour.getEndTime() == null) {
-                hours = "Cerrado";
-                isOpen = false;
-            } else {
-                String startTime = businessHour.getStartTime().format(TIME_FORMATTER);
-                String endTime = businessHour.getEndTime().format(TIME_FORMATTER);
-                hours = startTime + " - " + endTime;
-                isOpen = true;
+                return new BusinessHourDto(businessHour.getDayOfWeek(), "Cerrado", false);
             }
 
-            return new BusinessHourDto(
-                    businessHour.getDayOfWeek(),
-                    hours,
-                    isOpen
-            );
+            String startTime = businessHour.getStartTime().format(TIME_FORMATTER);
+            String endTime = businessHour.getEndTime().format(TIME_FORMATTER);
+            String hours = startTime + " - " + endTime;
+
+            return new BusinessHourDto(businessHour.getDayOfWeek(), hours, true);
         }
     }
 }
