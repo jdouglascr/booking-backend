@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public sealed interface ServiceDto {
 
@@ -87,5 +88,22 @@ public sealed interface ServiceDto {
                     service.getCreatedAt()
             );
         }
+    }
+
+    record PublicServiceResponse(
+            Integer categoryId,
+            String categoryName,
+            List<PublicService> services
+    ) implements ServiceDto {
+    }
+
+    record PublicService(
+            Integer id,
+            String name,
+            String description,
+            String logoUrl,
+            Integer durationMin,
+            Integer price
+    ) implements ServiceDto {
     }
 }

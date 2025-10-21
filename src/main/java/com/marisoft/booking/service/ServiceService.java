@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
@@ -84,5 +86,30 @@ public class ServiceService {
     public void delete(Integer id) {
         com.marisoft.booking.service.Service service = findById(id);
         serviceRepository.delete(service);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServiceDto.PublicServiceResponse> findAllPublic() {
+        List<Service> allServices = serviceRepository.findAll();
+
+        Map<Category, List<Service>> servicesByCategory = allServices.stream()
+                .collect(Collectors.groupingBy(Service::getCategory));
+        
+        return servicesByCategory.entrySet().stream()
+                .map(entry -> new ServiceDto.PublicServiceResponse(
+                        entry.getKey().getId(),
+                        entry.getKey().getName(),
+                        entry.getValue().stream()
+                                .map(service -> new ServiceDto.PublicService(
+                                        service.getId(),
+                                        service.getName(),
+                                        service.getDescription(),
+                                        service.getLogoUrl(),
+                                        service.getDurationMin(),
+                                        service.getPrice()
+                                ))
+                                .toList()
+                ))
+                .toList();
     }
 }
