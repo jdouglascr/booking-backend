@@ -1,9 +1,9 @@
 package com.marisoft.booking.resource;
 
-import com.marisoft.booking.shared.ResourceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -20,7 +20,8 @@ public sealed interface ResourceDto {
             String name,
 
             @NotNull(message = "El tipo de recurso es obligatorio")
-            ResourceType resourceType,
+            @Pattern(regexp = "Profesional|Infraestructura", message = "El tipo debe ser 'Profesional' o 'Infraestructura'")
+            String resourceType,
 
             String description,
 
@@ -41,7 +42,8 @@ public sealed interface ResourceDto {
             String name,
 
             @NotNull(message = "El tipo de recurso es obligatorio")
-            ResourceType resourceType,
+            @Pattern(regexp = "Profesional|Infraestructura", message = "El tipo debe ser 'Profesional' o 'Infraestructura'")
+            String resourceType,
 
             String description,
 
@@ -81,7 +83,7 @@ public sealed interface ResourceDto {
                     resource.getUser().getId(),
                     resource.getUser().getFullName(),
                     resource.getName(),
-                    resource.getResourceType().getDisplayName(),
+                    resource.getResourceType(),
                     resource.getDescription(),
                     resource.getImageUrl(),
                     services,
@@ -110,26 +112,8 @@ public sealed interface ResourceDto {
             return new SimpleResponse(
                     resource.getId(),
                     resource.getName(),
-                    resource.getResourceType().getDisplayName(),
+                    resource.getResourceType(),
                     resource.getUser().getFullName()
-            );
-        }
-    }
-
-    record PublicResourceResponse(
-            Integer id,
-            String name,
-            String description,
-            String imageUrl,
-            String resourceType
-    ) implements ResourceDto {
-        public static PublicResourceResponse fromEntity(Resource resource) {
-            return new PublicResourceResponse(
-                    resource.getId(),
-                    resource.getName(),
-                    resource.getDescription(),
-                    resource.getImageUrl(),
-                    resource.getResourceType().getDisplayName()
             );
         }
     }
