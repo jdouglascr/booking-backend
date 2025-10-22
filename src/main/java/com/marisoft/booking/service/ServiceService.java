@@ -6,10 +6,16 @@ import com.marisoft.booking.service.ServiceDto.CreateRequest;
 import com.marisoft.booking.service.ServiceDto.UpdateRequest;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
+import com.marisoft.booking.website.dto.PublicServiceDto;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
@@ -84,5 +90,49 @@ public class ServiceService {
     public void delete(Integer id) {
         com.marisoft.booking.service.Service service = findById(id);
         serviceRepository.delete(service);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicServiceDto.Category> findAllPublic() {
+        List<Service> allServices = serviceRepository.findAll();
+
+        Map<Category, List<Service>> servicesByCategory = allServices.stream()
+                .collect(Collectors.groupingBy(Service::getCategory));
+
+        return servicesByCategory.entrySet().stream()
+                .map(entry -> new PublicServiceDto.Category(
+                        entry.getKey().getId(),
+                        entry.getKey().getName(),
+                        entry.getValue().stream()
+                                .map(service -> new PublicServiceDto.Service(
+                                        service.getId(),
+                                        service.getName(),
+                                        service.getDescription(),
+                                        service.getLogoUrl(),
+                                        service.getDurationMin(),
+                                        service.getPrice(),
+                                        formatPrice(service.getPrice()),
+                                        formatDuration(service.getDurationMin())
+                                ))
+                                .toList()
+                ))
+                .toList();
+    }
+
+    private String formatPrice(Integer price) {
+        NumberFormat formatter = NumberFormat.getInstance(Locale.of("es", "CL"));
+        return "$" + formatter.format(price);
+    }
+
+    private String formatDuration(Integer minutes) {
+        if (minutes < 60) {
+            return minutes + " min";
+        }
+        int hours = minutes / 60;
+        int mins = minutes % 60;
+        if (mins == 0) {
+            return hours + " h";
+        }
+        return hours + " h " + mins + " min";
     }
 }
