@@ -62,7 +62,10 @@ public class ResourceServiceLayer {
         Resource savedResource = resourceRepository.save(resource);
 
         services.forEach(service -> {
-            ResourceService rs = new ResourceService(savedResource, service);
+            ResourceService rs = ResourceService.builder()
+                    .resource(savedResource)
+                    .service(service)
+                    .build();
             savedResource.addService(rs);
         });
 
@@ -102,7 +105,10 @@ public class ResourceServiceLayer {
         services.stream()
                 .filter(service -> !existingServiceIds.contains(service.getId()))
                 .forEach(service -> {
-                    ResourceService rs = new ResourceService(resource, service);
+                    ResourceService rs = ResourceService.builder()
+                            .resource(resource)
+                            .service(service)
+                            .build();
                     resource.addService(rs);
                 });
 
@@ -124,10 +130,15 @@ public class ResourceServiceLayer {
     }
 
     @Transactional(readOnly = true)
+    public List<ResourceService> getResourceServicesByService(Integer serviceId) {
+        serviceService.findById(serviceId);
+        return resourceServiceRepository.findByServiceId(serviceId);
+    }
+
+    @Transactional(readOnly = true)
     public List<Resource> getResourcesByService(Integer serviceId) {
         serviceService.findById(serviceId);
-        List<ResourceService> resourceServices = resourceServiceRepository.findByServiceId(serviceId);
-        return resourceServices.stream()
+        return resourceServiceRepository.findByServiceId(serviceId).stream()
                 .map(ResourceService::getResource)
                 .toList();
     }

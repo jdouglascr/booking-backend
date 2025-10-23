@@ -1,5 +1,7 @@
 package com.marisoft.booking.website;
 
+import com.marisoft.booking.booking.Booking;
+import com.marisoft.booking.booking.BookingService;
 import com.marisoft.booking.business.Business;
 import com.marisoft.booking.business.BusinessService;
 import com.marisoft.booking.businesshour.BusinessHourRepository;
@@ -7,6 +9,7 @@ import com.marisoft.booking.customer.Customer;
 import com.marisoft.booking.customer.CustomerService;
 import com.marisoft.booking.resource.ResourceServiceLayer;
 import com.marisoft.booking.service.ServiceService;
+import com.marisoft.booking.website.dto.PublicBookingDto;
 import com.marisoft.booking.website.dto.PublicBusinessDto;
 import com.marisoft.booking.website.dto.PublicCustomerDto;
 import com.marisoft.booking.website.dto.PublicResourceDto;
@@ -35,6 +38,7 @@ public class PublicController {
     private final ServiceService serviceService;
     private final ResourceServiceLayer resourceService;
     private final CustomerService customerService;
+    private final BookingService bookingService;
 
     @GetMapping("/business")
     public PublicBusinessDto getBusinessInfo() {
@@ -73,8 +77,8 @@ public class PublicController {
 
     @GetMapping("/resources/by-service/{serviceId}")
     public List<PublicResourceDto> getResourcesByService(@PathVariable Integer serviceId) {
-        return resourceService.getResourcesByService(serviceId).stream()
-                .map(PublicResourceDto::fromEntity)
+        return resourceService.getResourceServicesByService(serviceId).stream()  // Cambiar aquí
+                .map(PublicResourceDto::fromResourceService)
                 .toList();
     }
 
@@ -85,5 +89,14 @@ public class PublicController {
     ) {
         Customer customer = customerService.upsert(request);
         return PublicCustomerDto.Response.fromEntity(customer);
+    }
+
+    @PostMapping("/bookings")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PublicBookingDto.Response createBooking(
+            @Valid @RequestBody PublicBookingDto.CreateRequest request
+    ) {
+        Booking booking = bookingService.createPublic(request);
+        return PublicBookingDto.Response.fromEntity(booking);
     }
 }
