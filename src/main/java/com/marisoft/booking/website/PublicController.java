@@ -3,15 +3,23 @@ package com.marisoft.booking.website;
 import com.marisoft.booking.business.Business;
 import com.marisoft.booking.business.BusinessService;
 import com.marisoft.booking.businesshour.BusinessHourRepository;
+import com.marisoft.booking.customer.Customer;
+import com.marisoft.booking.customer.CustomerService;
 import com.marisoft.booking.resource.ResourceServiceLayer;
 import com.marisoft.booking.service.ServiceService;
 import com.marisoft.booking.website.dto.PublicBusinessDto;
+import com.marisoft.booking.website.dto.PublicCustomerDto;
 import com.marisoft.booking.website.dto.PublicResourceDto;
 import com.marisoft.booking.website.dto.PublicServiceDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
@@ -26,6 +34,7 @@ public class PublicController {
     private final BusinessHourRepository businessHourRepository;
     private final ServiceService serviceService;
     private final ResourceServiceLayer resourceService;
+    private final CustomerService customerService;
 
     @GetMapping("/business")
     public PublicBusinessDto getBusinessInfo() {
@@ -67,5 +76,14 @@ public class PublicController {
         return resourceService.getResourcesByService(serviceId).stream()
                 .map(PublicResourceDto::fromEntity)
                 .toList();
+    }
+
+    @PostMapping("/customers")
+    @ResponseStatus(HttpStatus.OK)
+    public PublicCustomerDto.Response upsertCustomer(
+            @Valid @RequestBody PublicCustomerDto.UpsertRequest request
+    ) {
+        Customer customer = customerService.upsert(request);
+        return PublicCustomerDto.Response.fromEntity(customer);
     }
 }

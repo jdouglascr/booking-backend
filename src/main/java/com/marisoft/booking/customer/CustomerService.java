@@ -1,9 +1,10 @@
 package com.marisoft.booking.customer;
 
+import com.marisoft.booking.customer.CustomerDto.CreateRequest;
 import com.marisoft.booking.customer.CustomerDto.UpdateRequest;
-import com.marisoft.booking.customer.CustomerDto.UpsertRequest;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
+import com.marisoft.booking.website.dto.PublicCustomerDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +35,47 @@ public class CustomerService {
     }
 
     @Transactional
-    public Customer upsert(UpsertRequest request) {
+    public void create(CreateRequest request) {
+        if (customerRepository.existsByEmail(request.email())) {
+            throw new BadRequestException("El email ya está registrado");
+        }
+
+        Customer customer = Customer.builder()
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .email(request.email())
+                .phone(request.phone())
+                .build();
+
+        customerRepository.save(customer);
+    }
+
+    @Transactional
+    public void update(Integer id, UpdateRequest request) {
+        Customer customer = findById(id);
+
+        if (!customer.getEmail().equals(request.email())) {
+            if (customerRepository.existsByEmailAndIdNot(request.email(), id)) {
+                throw new BadRequestException("El email ya está registrado");
+            }
+            customer.setEmail(request.email());
+        }
+
+        customer.setFirstName(request.firstName());
+        customer.setLastName(request.lastName());
+        customer.setPhone(request.phone());
+
+        customerRepository.save(customer);
+    }
+
+    @Transactional
+    public void delete(Integer id) {
+        Customer customer = findById(id);
+        customerRepository.delete(customer);
+    }
+
+    @Transactional
+    public Customer upsert(PublicCustomerDto.UpsertRequest request) {
         return customerRepository.findByEmail(request.email())
                 .map(existing -> {
                     boolean updated = false;
@@ -63,29 +104,5 @@ public class CustomerService {
                             .build();
                     return customerRepository.save(newCustomer);
                 });
-    }
-
-    @Transactional
-    public void update(Integer id, UpdateRequest request) {
-        Customer customer = findById(id);
-
-        if (!customer.getEmail().equals(request.email())) {
-            if (customerRepository.existsByEmailAndIdNot(request.email(), id)) {
-                throw new BadRequestException("El email ya está registrado");
-            }
-            customer.setEmail(request.email());
-        }
-
-        customer.setFirstName(request.firstName());
-        customer.setLastName(request.lastName());
-        customer.setPhone(request.phone());
-
-        customerRepository.save(customer);
-    }
-
-    @Transactional
-    public void delete(Integer id) {
-        Customer customer = findById(id);
-        customerRepository.delete(customer);
     }
 }
