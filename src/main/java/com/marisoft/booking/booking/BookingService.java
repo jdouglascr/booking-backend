@@ -6,6 +6,8 @@ import com.marisoft.booking.customer.Customer;
 import com.marisoft.booking.customer.CustomerService;
 import com.marisoft.booking.resource.ResourceService;
 import com.marisoft.booking.resource.ResourceServiceRepository;
+import com.marisoft.booking.shared.email.BookingEmailDto;
+import com.marisoft.booking.shared.email.EmailService;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.website.dto.PublicBookingDto;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final CustomerService customerService;
     private final ResourceServiceRepository resourceServiceRepository;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public List<Booking> findAll() {
@@ -32,6 +36,12 @@ public class BookingService {
     @Transactional(readOnly = true)
     public Booking findById(Integer id) {
         return bookingRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Reserva no encontrada"));
+    }
+
+    @Transactional(readOnly = true)
+    public Booking findByConfirmationToken(String token) {
+        return bookingRepository.findByConfirmationToken(token)
                 .orElseThrow(() -> new NotFoundException("Reserva no encontrada"));
     }
 
@@ -53,17 +63,24 @@ public class BookingService {
         Customer customer = customerService.findById(request.customerId());
         ResourceService resourceService = findResourceServiceById(request.resourceServiceId());
 
+        String token = request.confirmationToken() != null ?
+                request.confirmationToken() :
+                generateConfirmationToken();
+
         Booking booking = Booking.builder()
                 .customer(customer)
                 .resourceService(resourceService)
                 .startDatetime(request.startDatetime())
                 .endDatetime(request.endDatetime())
                 .price(request.price())
-                .confirmationToken(request.confirmationToken())
+                .confirmationToken(token)
                 .notes(request.notes())
                 .build();
 
-        bookingRepository.save(booking);
+        booking = bookingRepository.save(booking);
+
+        BookingEmailDto emailDto = BookingEmailDto.fromEntity(booking);
+        emailService.sendBookingConfirmationEmail(emailDto);
     }
 
     @Transactional
@@ -109,10 +126,47 @@ public class BookingService {
                 .startDatetime(request.startDatetime())
                 .endDatetime(request.endDatetime())
                 .price(request.price())
+                .confirmationToken(generateConfirmationToken())
                 .notes(request.notes())
                 .build();
 
-        return bookingRepository.save(booking);
+        booking = bookingRepository.save(booking);
+
+        BookingEmailDto emailDto = BookingEmailDto.fromEntity(booking);
+        emailService.sendBookingConfirmationEmail(emailDto);
+
+        return booking;
+    }
+
+    @Transactional
+    public void confirmBooking(String token) {
+        Booking booking = findByConfirmationToken(token);
+
+        switch (booking.getStatus()) {
+            case "Confirmada", "Cancelada", "Completada" ->
+                    throw new BadRequestException("No se puede confirmar una reserva " + booking.getStatus().toLowerCase());
+            default -> {
+                booking.setStatus("Confirmada");
+                bookingRepository.save(booking);
+            }
+        }
+    }
+
+    @Transactional
+    public void cancelBooking(String token, String reason) {
+        Booking booking = findByConfirmationToken(token);
+
+        switch (booking.getStatus()) {
+            case "Cancelada", "Completada" ->
+                    throw new BadRequestException("No se puede cancelar una reserva " + booking.getStatus().toLowerCase());
+            default -> {
+                booking.setStatus("Cancelada");
+                booking.setCancellationReason(reason != null ? reason : "Cancelada por el cliente");
+                booking.setCancelledBy("Cliente");
+                booking.setCancelledAt(LocalDateTime.now());
+                bookingRepository.save(booking);
+            }
+        }
     }
 
     private ResourceService findResourceServiceById(Integer id) {
@@ -131,5 +185,9 @@ public class BookingService {
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Estado inválido. Valores permitidos: " + String.join(", ", validStatuses));
         }
+    }
+
+    private String generateConfirmationToken() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 }
