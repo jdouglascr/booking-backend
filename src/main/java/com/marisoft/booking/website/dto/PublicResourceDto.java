@@ -1,19 +1,21 @@
 package com.marisoft.booking.website.dto;
 
-import com.marisoft.booking.resource.Resource;
+import com.marisoft.booking.resource.ResourceService;
 
 public record PublicResourceDto(
-        Integer id,
+        Integer resourceServiceId,
+        Integer resourceId,
         String name,
         String description,
         String imageUrl
 ) {
-    public static PublicResourceDto fromEntity(Resource resource) {
+    public static PublicResourceDto fromResourceService(ResourceService rs) {
         return new PublicResourceDto(
-                resource.getId(),
-                resource.getName(),
-                resource.getDescription(),
-                resource.getImageUrl()
+                rs.getId(),
+                rs.getResource().getId(),
+                rs.getResource().getName(),
+                rs.getResource().getDescription(),
+                rs.getResource().getImageUrl()
         );
     }
 }

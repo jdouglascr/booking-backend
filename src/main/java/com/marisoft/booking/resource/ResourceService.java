@@ -2,12 +2,13 @@ package com.marisoft.booking.resource;
 
 import com.marisoft.booking.service.Service;
 import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -27,17 +28,16 @@ import java.time.LocalDateTime;
 @Builder
 public class ResourceService {
 
-    @EmbeddedId
-    private ResourceServiceId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("resourceId")
-    @JoinColumn(name = "id_resource")
+    @JoinColumn(name = "id_resource", nullable = false)
     private Resource resource;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("serviceId")
-    @JoinColumn(name = "id_service")
+    @JoinColumn(name = "id_service", nullable = false)
     private Service service;
 
     @Column(name = "created_at", insertable = false, updatable = false)
@@ -56,6 +56,5 @@ public class ResourceService {
     public ResourceService(Resource resource, Service service) {
         this.resource = resource;
         this.service = service;
-        this.id = new ResourceServiceId(resource.getId(), service.getId());
     }
 }

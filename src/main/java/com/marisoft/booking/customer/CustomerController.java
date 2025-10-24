@@ -1,8 +1,8 @@
 package com.marisoft.booking.customer;
 
 import com.marisoft.booking.customer.CustomerDto.Response;
+import com.marisoft.booking.customer.CustomerDto.CreateRequest;
 import com.marisoft.booking.customer.CustomerDto.UpdateRequest;
-import com.marisoft.booking.customer.CustomerDto.UpsertRequest;
 import com.marisoft.booking.shared.dto.MessageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +23,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/customers")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class CustomerController {
 
     private final CustomerService customerService;
-    
+
     @PostMapping
-    @ResponseStatus(HttpStatus.OK)
-    public Response upsertCustomer(@Valid @RequestBody UpsertRequest request) {
-        Customer customer = customerService.upsert(request);
-        return Response.fromEntity(customer);
+    @ResponseStatus(HttpStatus.CREATED)
+    public MessageResponse createCustomer(@Valid @RequestBody CreateRequest request) {
+        customerService.create(request);
+        return new MessageResponse("Cliente creado exitosamente");
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<Response> getAllCustomers() {
         return customerService.findAll().stream()
@@ -42,19 +42,16 @@ public class CustomerController {
                 .toList();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Response getCustomerById(@PathVariable Integer id) {
         return Response.fromEntity(customerService.findById(id));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/email/{email}")
     public Response getCustomerByEmail(@PathVariable String email) {
         return Response.fromEntity(customerService.findByEmail(email));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public MessageResponse updateCustomer(
             @PathVariable Integer id,
@@ -64,7 +61,6 @@ public class CustomerController {
         return new MessageResponse("Cliente actualizado exitosamente");
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public MessageResponse deleteCustomer(@PathVariable Integer id) {
         customerService.delete(id);

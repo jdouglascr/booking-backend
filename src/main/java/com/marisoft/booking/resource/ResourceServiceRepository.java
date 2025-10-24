@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ResourceServiceRepository extends JpaRepository<ResourceService, ResourceServiceId> {
+public interface ResourceServiceRepository extends JpaRepository<ResourceService, Integer> {
 
     List<ResourceService> findByResourceId(Integer resourceId);
 
