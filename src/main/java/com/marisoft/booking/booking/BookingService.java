@@ -2,6 +2,8 @@ package com.marisoft.booking.booking;
 
 import com.marisoft.booking.booking.BookingDto.CreateRequest;
 import com.marisoft.booking.booking.BookingDto.UpdateRequest;
+import com.marisoft.booking.business.Business;
+import com.marisoft.booking.business.BusinessService;
 import com.marisoft.booking.customer.Customer;
 import com.marisoft.booking.customer.CustomerService;
 import com.marisoft.booking.resource.ResourceService;
@@ -27,6 +29,7 @@ public class BookingService {
     private final CustomerService customerService;
     private final ResourceServiceRepository resourceServiceRepository;
     private final EmailService emailService;
+    private final BusinessService businessService;
 
     @Transactional(readOnly = true)
     public List<Booking> findAll() {
@@ -79,8 +82,7 @@ public class BookingService {
 
         booking = bookingRepository.save(booking);
 
-        BookingEmailDto emailDto = BookingEmailDto.fromEntity(booking);
-        emailService.sendBookingConfirmationEmail(emailDto);
+        sendBookingConfirmationEmail(booking);
     }
 
     @Transactional
@@ -132,8 +134,7 @@ public class BookingService {
 
         booking = bookingRepository.save(booking);
 
-        BookingEmailDto emailDto = BookingEmailDto.fromEntity(booking);
-        emailService.sendBookingConfirmationEmail(emailDto);
+        sendBookingConfirmationEmail(booking);
 
         return booking;
     }
@@ -167,6 +168,16 @@ public class BookingService {
                 bookingRepository.save(booking);
             }
         }
+    }
+
+    private void sendBookingConfirmationEmail(Booking booking) {
+        BookingEmailDto emailDto = BookingEmailDto.fromEntity(booking);
+
+        Business business = businessService.get();
+        String logoUrl = business.getLogoUrl();
+        String bannerUrl = business.getBannerUrl();
+
+        emailService.sendBookingConfirmationEmail(emailDto, logoUrl, bannerUrl);
     }
 
     private ResourceService findResourceServiceById(Integer id) {
