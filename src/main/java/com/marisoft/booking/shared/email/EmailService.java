@@ -1,13 +1,16 @@
 package com.marisoft.booking.shared.email;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +25,13 @@ import java.util.Locale;
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final SendGrid sendGrid;
 
-    @Value("${MAIL_USERNAME}")
+    @Value("${sendgrid.from-email}")
     private String fromEmail;
+
+    @Value("${sendgrid.from-name:Sistema de Reservas}")
+    private String fromName;
 
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
@@ -34,24 +40,49 @@ public class EmailService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @Async
-    public void sendBookingConfirmationEmail(BookingEmailDto bookingDto) {
+    public void sendBookingConfirmationEmail(BookingEmailDto bookingDto, String logoUrl, String bannerUrl) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            String htmlContent = buildEmailContent(bookingDto, logoUrl, bannerUrl);
+            String subject = "Confirma tu reserva - " + bookingDto.getServiceName();
 
-            helper.setFrom(fromEmail);
-            helper.setTo(bookingDto.getCustomerEmail());
-            helper.setSubject("Confirma tu reserva - " + bookingDto.getServiceName());
-            helper.setText(buildEmailContent(bookingDto), true);
+            sendHtmlEmail(bookingDto.getCustomerEmail(), subject, htmlContent);
 
-            mailSender.send(message);
-            log.info("Email de confirmación enviado a: {}", bookingDto.getCustomerEmail());
-        } catch (MessagingException | IOException e) {
-            log.error("Error al enviar email de confirmación", e);
+            log.info("Email de confirmación enviado exitosamente a: {}", bookingDto.getCustomerEmail());
+        } catch (IOException e) {
+            log.error("Error al enviar email de confirmación a {}: {}",
+                    bookingDto.getCustomerEmail(), e.getMessage(), e);
         }
     }
 
-    private String buildEmailContent(BookingEmailDto booking) throws IOException {
+    public void sendHtmlEmail(String toEmail, String subject, String htmlContent) throws IOException {
+        Email from = new Email(fromEmail, fromName);
+        Email to = new Email(toEmail);
+        Content content = new Content("text/html", htmlContent);
+
+        Mail mail = new Mail(from, subject, to, content);
+
+        Request request = new Request();
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sendGrid.api(request);
+
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                log.debug("Email enviado exitosamente. Status: {}", response.getStatusCode());
+            } else {
+                log.error("Error al enviar email. Status: {}, Body: {}",
+                        response.getStatusCode(), response.getBody());
+                throw new IOException("SendGrid retornó status: " + response.getStatusCode());
+            }
+        } catch (IOException e) {
+            log.error("Error en la comunicación con SendGrid: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    private String buildEmailContent(BookingEmailDto booking, String logoUrl, String bannerUrl) throws IOException {
         String template = loadTemplate();
 
         String confirmUrl = frontendUrl + "booking/confirm/" + booking.getConfirmationToken();
@@ -65,6 +96,7 @@ public class EmailService {
         String endTime = booking.getEndDatetime().format(TIME_FORMATTER);
         String price = NumberFormat.getCurrencyInstance(Locale.of("es", "CL")).format(booking.getPrice());
 
+        assert logoUrl != null && bannerUrl != null;
         return template
                 .replace("{{customerName}}", customerName)
                 .replace("{{serviceName}}", serviceName)
@@ -75,7 +107,9 @@ public class EmailService {
                 .replace("{{price}}", price)
                 .replace("{{status}}", booking.getStatus())
                 .replace("{{confirmUrl}}", confirmUrl)
-                .replace("{{cancelUrl}}", cancelUrl);
+                .replace("{{cancelUrl}}", cancelUrl)
+                .replace("{{logoUrl}}", logoUrl)
+                .replace("{{bannerUrl}}", bannerUrl);
     }
 
     private String loadTemplate() throws IOException {
