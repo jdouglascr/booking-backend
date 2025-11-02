@@ -1,6 +1,5 @@
 package com.marisoft.booking.user;
 
-import com.marisoft.booking.shared.Role;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.user.UserDto.CreateRequest;
@@ -36,14 +35,16 @@ public class UserService {
             throw new BadRequestException("El email ya está registrado");
         }
 
+        validatePhoneFormat(request.phone());
+
         User user = User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .email(request.email())
                 .phone(request.phone())
                 .password(passwordEncoder.encode(request.password()))
-                .role(request.role() != null ? request.role() : Role.ROLE_STAFF)
-                .isActive(true)
+                .role(request.role())
+                .isActive(request.isActive())
                 .build();
 
         userRepository.save(user);
@@ -60,12 +61,19 @@ public class UserService {
             user.setEmail(request.email());
         }
 
+        validatePhoneFormat(request.phone());
+
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setPhone(request.phone());
+        user.setRole(request.role());
+        user.setIsActive(request.isActive());
 
-        if (request.role() != null) {
-            user.setRole(request.role());
+        if (request.password() != null && !request.password().isBlank()) {
+            if (request.password().length() < 6) {
+                throw new BadRequestException("La contraseña debe tener al menos 6 caracteres");
+            }
+            user.setPassword(passwordEncoder.encode(request.password()));
         }
 
         userRepository.save(user);
@@ -75,5 +83,11 @@ public class UserService {
     public void delete(Integer id) {
         User user = findById(id);
         userRepository.delete(user);
+    }
+
+    private void validatePhoneFormat(String phone) {
+        if (phone == null || !phone.matches("\\+56[0-9]{9}")) {
+            throw new BadRequestException("El teléfono debe tener el formato +56XXXXXXXXX");
+        }
     }
 }
