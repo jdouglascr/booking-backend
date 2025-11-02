@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public sealed interface AuthDto {
-    
+
     record LoginRequest(
             @NotBlank(message = "El email es obligatorio")
             @Email(message = "Email inválido")
@@ -31,6 +31,18 @@ public sealed interface AuthDto {
     record RefreshTokenResponse(
             String accessToken,
             String refreshToken
+    ) implements AuthDto {
+    }
+
+    record CurrentUserResponse(
+            Integer id,
+            String email,
+            String fullName,
+            String firstName,
+            String lastName,
+            String phone,
+            String role,
+            Boolean isActive
     ) implements AuthDto {
     }
 }

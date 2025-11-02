@@ -18,7 +18,6 @@ public class JwtUtil {
         Claims claims = Jwts.claims()
                 .subject(user.getEmail())
                 .add("role", user.getRole().name())
-                .add("userId", user.getId())
                 .add("type", "access")
                 .build();
 
@@ -33,7 +32,6 @@ public class JwtUtil {
     public String generateRefreshToken(User user) {
         Claims claims = Jwts.claims()
                 .subject(user.getEmail())
-                .add("userId", user.getId())
                 .add("type", "refresh")
                 .build();
 
@@ -51,10 +49,6 @@ public class JwtUtil {
 
     public String getRoleFromToken(String token) {
         return getClaims(token).get("role", String.class);
-    }
-
-    public Integer getUserIdFromToken(String token) {
-        return getClaims(token).get("userId", Integer.class);
     }
 
     public String getTokenType(String token) {

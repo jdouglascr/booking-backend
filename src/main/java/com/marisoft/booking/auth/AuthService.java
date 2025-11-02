@@ -1,5 +1,6 @@
 package com.marisoft.booking.auth;
 
+import com.marisoft.booking.auth.AuthDto.CurrentUserResponse;
 import com.marisoft.booking.auth.AuthDto.LoginRequest;
 import com.marisoft.booking.auth.AuthDto.LoginResponse;
 import com.marisoft.booking.auth.AuthDto.RefreshTokenRequest;
@@ -67,5 +68,18 @@ public class AuthService {
         String newAccessToken = jwtUtil.generateAccessToken(user);
 
         return new RefreshTokenResponse(newAccessToken, refreshToken);
+    }
+
+    public CurrentUserResponse getCurrentUser(User user) {
+        return new CurrentUserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhone(),
+                user.getRole().name(),
+                user.getIsActive()
+        );
     }
 }
