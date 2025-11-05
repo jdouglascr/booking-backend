@@ -5,6 +5,7 @@ import com.marisoft.booking.auth.AuthDto.LoginRequest;
 import com.marisoft.booking.auth.AuthDto.LoginResponse;
 import com.marisoft.booking.auth.AuthDto.RefreshTokenRequest;
 import com.marisoft.booking.auth.AuthDto.RefreshTokenResponse;
+import com.marisoft.booking.auth.AuthDto.UpdateProfileRequest;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.security.JwtUtil;
 import com.marisoft.booking.user.User;
@@ -81,5 +82,29 @@ public class AuthService {
                 user.getRole().name(),
                 user.getIsActive()
         );
+    }
+
+    @Transactional
+    public void updateProfile(User user, UpdateProfileRequest request) {
+        if (!user.getEmail().equals(request.email())) {
+            if (userRepository.existsByEmailAndIdNot(request.email(), user.getId())) {
+                throw new BadRequestException("El email ya está registrado");
+            }
+        }
+
+        if (!request.phone().matches("\\+56[0-9]{9}")) {
+            throw new BadRequestException("El teléfono debe tener el formato +56XXXXXXXXX");
+        }
+
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.password()));
+        }
+
+        userRepository.save(user);
     }
 }
