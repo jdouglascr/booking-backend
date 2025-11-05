@@ -26,9 +26,7 @@ public class PublicBookingDto {
 
             @NotNull(message = "El precio es obligatorio")
             @Min(value = 0, message = "El precio no puede ser negativo")
-            Integer price,
-
-            String notes
+            Integer price
     ) {
     }
 
@@ -43,8 +41,7 @@ public class PublicBookingDto {
             LocalDateTime startDatetime,
             LocalDateTime endDatetime,
             Integer price,
-            String status,
-            String notes
+            String status
     ) {
         public static Response fromEntity(Booking booking) {
             return new Response(
@@ -58,8 +55,7 @@ public class PublicBookingDto {
                     booking.getStartDatetime(),
                     booking.getEndDatetime(),
                     booking.getPrice(),
-                    booking.getStatus(),
-                    booking.getNotes()
+                    booking.getStatus()
             );
         }
     }

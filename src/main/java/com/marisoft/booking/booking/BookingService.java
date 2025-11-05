@@ -77,7 +77,6 @@ public class BookingService {
                 .endDatetime(request.endDatetime())
                 .price(request.price())
                 .confirmationToken(token)
-                .notes(request.notes())
                 .build();
 
         booking = bookingRepository.save(booking);
@@ -104,7 +103,6 @@ public class BookingService {
         booking.setCancelledBy(request.cancelledBy());
         booking.setCancelledAt(request.cancelledAt());
         booking.setConfirmationToken(request.confirmationToken());
-        booking.setNotes(request.notes());
 
         bookingRepository.save(booking);
     }
@@ -129,7 +127,6 @@ public class BookingService {
                 .endDatetime(request.endDatetime())
                 .price(request.price())
                 .confirmationToken(generateConfirmationToken())
-                .notes(request.notes())
                 .build();
 
         booking = bookingRepository.save(booking);
@@ -144,7 +141,7 @@ public class BookingService {
         Booking booking = findByConfirmationToken(token);
 
         switch (booking.getStatus()) {
-            case "Confirmada", "Cancelada", "Completada" ->
+            case "Confirmada", "Pagada", "Cancelada", "Completada" ->
                     throw new BadRequestException("No se puede confirmar una reserva " + booking.getStatus().toLowerCase());
             default -> {
                 booking.setStatus("Confirmada");
@@ -192,7 +189,7 @@ public class BookingService {
     }
 
     private void validateStatus(String status) {
-        List<String> validStatuses = List.of("Pendiente", "Confirmada", "Completada", "Cancelada");
+        List<String> validStatuses = List.of("Pendiente", "Confirmada", "Pagada", "Completada", "Cancelada");
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Estado inválido. Valores permitidos: " + String.join(", ", validStatuses));
         }

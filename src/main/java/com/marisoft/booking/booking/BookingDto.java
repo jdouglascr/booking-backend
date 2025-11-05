@@ -27,9 +27,7 @@ public sealed interface BookingDto {
             Integer price,
 
             @Size(max = 100, message = "El token de confirmación no puede exceder 100 caracteres")
-            String confirmationToken,
-
-            String notes
+            String confirmationToken
     ) implements BookingDto {
     }
 
@@ -55,14 +53,13 @@ public sealed interface BookingDto {
 
             String cancellationReason,
 
+            @Size(max = 100, message = "El campo cancelledBy no puede exceder 100 caracteres")
             String cancelledBy,
 
             LocalDateTime cancelledAt,
 
             @Size(max = 100, message = "El token de confirmación no puede exceder 100 caracteres")
-            String confirmationToken,
-
-            String notes
+            String confirmationToken
     ) implements BookingDto {
     }
 
@@ -85,7 +82,6 @@ public sealed interface BookingDto {
             String cancelledBy,
             LocalDateTime cancelledAt,
             String confirmationToken,
-            String notes,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) implements BookingDto {
@@ -109,7 +105,6 @@ public sealed interface BookingDto {
                     booking.getCancelledBy(),
                     booking.getCancelledAt(),
                     booking.getConfirmationToken(),
-                    booking.getNotes(),
                     booking.getCreatedAt(),
                     booking.getUpdatedAt()
             );

@@ -2,7 +2,16 @@ package com.marisoft.booking.booking;
 
 import com.marisoft.booking.customer.Customer;
 import com.marisoft.booking.resource.ResourceService;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,7 +57,7 @@ public class Booking {
     @Column(name = "cancellation_reason", columnDefinition = "TEXT")
     private String cancellationReason;
 
-    @Column(name = "cancelled_by", length = 10)
+    @Column(name = "cancelled_by", length = 100)
     private String cancelledBy;
 
     @Column(name = "cancelled_at")
@@ -56,9 +65,6 @@ public class Booking {
 
     @Column(name = "confirmation_token", length = 100)
     private String confirmationToken;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
