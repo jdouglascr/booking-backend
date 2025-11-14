@@ -1,26 +1,32 @@
 package com.marisoft.booking.resource;
 
-import com.marisoft.booking.resource.ResourceDto.CreateRequest;
-import com.marisoft.booking.resource.ResourceDto.UpdateRequest;
+import com.marisoft.booking.resource.ResourceDto.CreateTextData;
+import com.marisoft.booking.resource.ResourceDto.UpdateTextData;
 import com.marisoft.booking.service.Service;
 import com.marisoft.booking.service.ServiceService;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
+import com.marisoft.booking.shared.images.CloudinaryService;
 import com.marisoft.booking.user.User;
 import com.marisoft.booking.user.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
+@Slf4j
 public class ResourceServiceLayer {
 
     private final ResourceRepository resourceRepository;
     private final ResourceServiceRepository resourceServiceRepository;
     private final UserService userService;
     private final ServiceService serviceService;
+    private final CloudinaryService cloudinaryService;
+    private static final String CLOUDINARY_FOLDER = "resources";
 
     @Transactional(readOnly = true)
     public List<Resource> findAll() {
@@ -35,14 +41,17 @@ public class ResourceServiceLayer {
 
     @Transactional(readOnly = true)
     public List<Resource> findByUser(Integer userId) {
-        userService.findById(userId);
         return resourceRepository.findByUserId(userId);
     }
 
     @Transactional
-    public Resource create(CreateRequest request) {
+    public Resource create(CreateTextData request, MultipartFile image) {
         if (resourceRepository.existsByName(request.name())) {
             throw new BadRequestException("Ya existe un recurso con ese nombre");
+        }
+
+        if (image == null || image.isEmpty()) {
+            throw new BadRequestException("La imagen es obligatoria");
         }
 
         User user = userService.findById(request.userId());
@@ -51,12 +60,14 @@ public class ResourceServiceLayer {
                 .map(serviceService::findById)
                 .toList();
 
+        String imageUrl = cloudinaryService.uploadImage(image, CLOUDINARY_FOLDER);
+
         Resource resource = Resource.builder()
                 .user(user)
                 .name(request.name())
                 .resourceType(request.resourceType())
                 .description(request.description())
-                .imageUrl(request.imageUrl())
+                .imageUrl(imageUrl)
                 .build();
 
         Resource savedResource = resourceRepository.save(resource);
@@ -69,11 +80,12 @@ public class ResourceServiceLayer {
             savedResource.addService(rs);
         });
 
+        log.info("Recurso creado: {} con imagen: {}", savedResource.getName(), imageUrl);
         return resourceRepository.save(savedResource);
     }
 
     @Transactional
-    public Resource update(Integer id, UpdateRequest request) {
+    public Resource update(Integer id, UpdateTextData request, MultipartFile image) {
         Resource resource = findById(id);
 
         if (!resource.getName().equals(request.name())) {
@@ -88,11 +100,21 @@ public class ResourceServiceLayer {
                 .map(serviceService::findById)
                 .toList();
 
+        if (image != null && !image.isEmpty()) {
+            String oldImageUrl = resource.getImageUrl();
+            String newImageUrl = cloudinaryService.uploadImage(image, CLOUDINARY_FOLDER);
+            resource.setImageUrl(newImageUrl);
+
+            if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+                cloudinaryService.deleteImage(oldImageUrl);
+            }
+            log.info("Imagen actualizada para recurso: {} - Nueva: {}", resource.getName(), newImageUrl);
+        }
+
         resource.setUser(user);
         resource.setName(request.name());
         resource.setResourceType(request.resourceType());
         resource.setDescription(request.description());
-        resource.setImageUrl(request.imageUrl());
 
         resource.getResourceServices().removeIf(rs ->
                 !request.serviceIds().contains(rs.getService().getId())
@@ -118,6 +140,12 @@ public class ResourceServiceLayer {
     @Transactional
     public void delete(Integer id) {
         Resource resource = findById(id);
+
+        if (resource.getImageUrl() != null && !resource.getImageUrl().isEmpty()) {
+            cloudinaryService.deleteImage(resource.getImageUrl());
+            log.info("Imagen eliminada de Cloudinary para recurso: {}", resource.getName());
+        }
+
         resourceRepository.delete(resource);
     }
 

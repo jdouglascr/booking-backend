@@ -50,7 +50,6 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<Booking> findByCustomer(Integer customerId) {
-        customerService.findById(customerId);
         return bookingRepository.findByCustomerId(customerId);
     }
 
