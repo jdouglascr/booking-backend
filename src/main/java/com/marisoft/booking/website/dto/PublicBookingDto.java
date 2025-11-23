@@ -55,7 +55,7 @@ public class PublicBookingDto {
                     booking.getStartDatetime(),
                     booking.getEndDatetime(),
                     booking.getPrice(),
-                    booking.getStatus()
+                    booking.getStatus().getDisplayName()
             );
         }
     }

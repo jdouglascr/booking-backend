@@ -63,6 +63,12 @@ public sealed interface BookingDto {
     ) implements BookingDto {
     }
 
+    record UpdateStatusRequest(
+            @NotBlank(message = "El estado es obligatorio")
+            String status
+    ) implements BookingDto {
+    }
+
     record Response(
             Integer id,
             Integer customerId,
@@ -100,7 +106,7 @@ public sealed interface BookingDto {
                     booking.getStartDatetime(),
                     booking.getEndDatetime(),
                     booking.getPrice(),
-                    booking.getStatus(),
+                    booking.getStatus().getDisplayName(),
                     booking.getCancellationReason(),
                     booking.getCancelledBy(),
                     booking.getCancelledAt(),

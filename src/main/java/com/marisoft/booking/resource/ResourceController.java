@@ -8,11 +8,13 @@ import com.marisoft.booking.resource.ResourceDto.UpdateTextData;
 import com.marisoft.booking.service.ServiceDto;
 import com.marisoft.booking.shared.dto.MessageResponse;
 import com.marisoft.booking.shared.exception.BadRequestException;
+import com.marisoft.booking.user.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,17 +37,16 @@ public class ResourceController {
     private final ResourceServiceLayer resourceService;
     private final ObjectMapper objectMapper;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping
-    public List<Response> getAllResources(
-            @RequestParam(required = false) Integer userId
-    ) {
-        if (userId != null) {
-            return resourceService.findByUser(userId).stream()
+    public List<Response> getAllResources(@AuthenticationPrincipal User user) {
+        if (user.getRole().name().equals("ROLE_ADMIN")) {
+            return resourceService.findAll().stream()
                     .map(Response::fromEntity)
                     .toList();
         }
-        return resourceService.findAll().stream()
+
+        return resourceService.findByUser(user.getId()).stream()
                 .map(Response::fromEntity)
                 .toList();
     }

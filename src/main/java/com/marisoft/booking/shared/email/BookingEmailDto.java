@@ -31,7 +31,7 @@ public class BookingEmailDto {
                 .startDatetime(booking.getStartDatetime())
                 .endDatetime(booking.getEndDatetime())
                 .price(booking.getPrice())
-                .status(booking.getStatus())
+                .status(booking.getStatus().getDisplayName())
                 .build();
     }
 }

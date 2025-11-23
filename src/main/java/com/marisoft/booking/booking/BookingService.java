@@ -2,6 +2,7 @@ package com.marisoft.booking.booking;
 
 import com.marisoft.booking.booking.BookingDto.CreateRequest;
 import com.marisoft.booking.booking.BookingDto.UpdateRequest;
+import com.marisoft.booking.booking.BookingDto.UpdateStatusRequest;
 import com.marisoft.booking.business.Business;
 import com.marisoft.booking.business.BusinessService;
 import com.marisoft.booking.customer.Customer;
@@ -10,6 +11,7 @@ import com.marisoft.booking.resource.ResourceService;
 import com.marisoft.booking.resource.ResourceServiceRepository;
 import com.marisoft.booking.shared.email.BookingEmailDto;
 import com.marisoft.booking.shared.email.EmailService;
+import com.marisoft.booking.shared.enums.BookingStatus;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.website.dto.PublicBookingDto;
@@ -55,7 +57,13 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<Booking> findByStatus(String status) {
-        return bookingRepository.findByStatus(status);
+        BookingStatus bookingStatus = validateAndParseStatus(status);
+        return bookingRepository.findByStatus(bookingStatus);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Booking> findByResourceAndDateRange(Integer resourceId, LocalDateTime startDate, LocalDateTime endDate) {
+        return bookingRepository.findByResourceAndDateRange(resourceId, startDate, endDate);
     }
 
     @Transactional
@@ -86,7 +94,7 @@ public class BookingService {
     @Transactional
     public void update(Integer id, UpdateRequest request) {
         validateDatetimes(request.startDatetime(), request.endDatetime());
-        validateStatus(request.status());
+        BookingStatus status = validateAndParseStatus(request.status());
 
         Booking booking = findById(id);
         Customer customer = customerService.findById(request.customerId());
@@ -97,11 +105,21 @@ public class BookingService {
         booking.setStartDatetime(request.startDatetime());
         booking.setEndDatetime(request.endDatetime());
         booking.setPrice(request.price());
-        booking.setStatus(request.status());
+        booking.setStatus(status);
         booking.setCancellationReason(request.cancellationReason());
         booking.setCancelledBy(request.cancelledBy());
         booking.setCancelledAt(request.cancelledAt());
         booking.setConfirmationToken(request.confirmationToken());
+
+        bookingRepository.save(booking);
+    }
+
+    @Transactional
+    public void updateStatus(Integer id, UpdateStatusRequest request) {
+        BookingStatus status = validateAndParseStatus(request.status());
+
+        Booking booking = findById(id);
+        booking.setStatus(status);
 
         bookingRepository.save(booking);
     }
@@ -140,10 +158,10 @@ public class BookingService {
         Booking booking = findByConfirmationToken(token);
 
         switch (booking.getStatus()) {
-            case "Confirmada", "Pagada", "Cancelada", "Completada" ->
-                    throw new BadRequestException("No se puede confirmar una reserva " + booking.getStatus().toLowerCase());
+            case CONFIRMADA, PAGADA, CANCELADA, COMPLETADA ->
+                    throw new BadRequestException("No se puede confirmar una reserva " + booking.getStatus().getDisplayName().toLowerCase());
             default -> {
-                booking.setStatus("Confirmada");
+                booking.setStatus(BookingStatus.CONFIRMADA);
                 bookingRepository.save(booking);
             }
         }
@@ -154,10 +172,10 @@ public class BookingService {
         Booking booking = findByConfirmationToken(token);
 
         switch (booking.getStatus()) {
-            case "Cancelada", "Completada" ->
-                    throw new BadRequestException("No se puede cancelar una reserva " + booking.getStatus().toLowerCase());
+            case CANCELADA, COMPLETADA ->
+                    throw new BadRequestException("No se puede cancelar una reserva " + booking.getStatus().getDisplayName().toLowerCase());
             default -> {
-                booking.setStatus("Cancelada");
+                booking.setStatus(BookingStatus.CANCELADA);
                 booking.setCancellationReason(reason != null ? reason : "Cancelada por el cliente");
                 booking.setCancelledBy("Cliente");
                 booking.setCancelledAt(LocalDateTime.now());
@@ -187,10 +205,11 @@ public class BookingService {
         }
     }
 
-    private void validateStatus(String status) {
-        List<String> validStatuses = List.of("Pendiente", "Confirmada", "Pagada", "Completada", "Cancelada");
-        if (!validStatuses.contains(status)) {
-            throw new BadRequestException("Estado inválido. Valores permitidos: " + String.join(", ", validStatuses));
+    private BookingStatus validateAndParseStatus(String status) {
+        try {
+            return BookingStatus.fromString(status);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Estado inválido. Valores permitidos: Pendiente, Confirmada, Pagada, Completada, Cancelada");
         }
     }
 

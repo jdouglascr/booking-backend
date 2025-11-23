@@ -2,8 +2,11 @@ package com.marisoft.booking.booking;
 
 import com.marisoft.booking.customer.Customer;
 import com.marisoft.booking.resource.ResourceService;
+import com.marisoft.booking.shared.enums.BookingStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -50,9 +53,10 @@ public class Booking {
     @Column(nullable = false)
     private Integer price;
 
-    @Column(length = 15)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 15, nullable = false)
     @Builder.Default
-    private String status = "Pendiente";
+    private BookingStatus status = BookingStatus.PENDIENTE;
 
     @Column(name = "cancellation_reason", columnDefinition = "TEXT")
     private String cancellationReason;
@@ -78,7 +82,7 @@ public class Booking {
             createdAt = LocalDateTime.now();
         }
         if (status == null) {
-            status = "Pendiente";
+            status = BookingStatus.PENDIENTE;
         }
     }
 }
