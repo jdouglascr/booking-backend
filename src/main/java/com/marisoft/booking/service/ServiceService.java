@@ -6,10 +6,13 @@ import com.marisoft.booking.service.ServiceDto.CreateRequest;
 import com.marisoft.booking.service.ServiceDto.UpdateRequest;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
+import com.marisoft.booking.shared.images.CloudinaryService;
 import com.marisoft.booking.website.dto.PublicServiceDto;
-
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -17,12 +20,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@org.springframework.stereotype.Service
+@Service
 @RequiredArgsConstructor
+@Slf4j
 public class ServiceService {
 
     private final ServiceRepository serviceRepository;
     private final CategoryService categoryService;
+    private final CloudinaryService cloudinaryService;
+
+    private static final String CLOUDINARY_FOLDER = "services";
 
     @Transactional(readOnly = true)
     public List<com.marisoft.booking.service.Service> findAll() {
@@ -42,28 +49,34 @@ public class ServiceService {
     }
 
     @Transactional
-    public void create(CreateRequest request) {
+    public void create(CreateRequest request, MultipartFile logo) {
         Category category = categoryService.findById(request.categoryId());
 
         if (serviceRepository.existsByCategoryIdAndName(request.categoryId(), request.name())) {
             throw new BadRequestException("Ya existe un servicio con ese nombre en esta categoría");
         }
 
+        String logoUrl = null;
+        if (logo != null && !logo.isEmpty()) {
+            logoUrl = cloudinaryService.uploadImage(logo, CLOUDINARY_FOLDER);
+        }
+
         com.marisoft.booking.service.Service service = com.marisoft.booking.service.Service.builder()
                 .category(category)
                 .name(request.name())
                 .description(request.description())
-                .logoUrl(request.logoUrl())
+                .logoUrl(logoUrl)
                 .durationMin(request.durationMin())
                 .bufferTimeMin(request.bufferTimeMin() != null ? request.bufferTimeMin() : 0)
                 .price(request.price())
                 .build();
 
         serviceRepository.save(service);
+        log.info("Servicio creado exitosamente: {}", service.getName());
     }
 
     @Transactional
-    public void update(Integer id, UpdateRequest request) {
+    public void update(Integer id, UpdateRequest request, MultipartFile logo) {
         com.marisoft.booking.service.Service service = findById(id);
         Category category = categoryService.findById(request.categoryId());
 
@@ -75,29 +88,52 @@ public class ServiceService {
             }
         }
 
-        service.setCategory(category);
-        service.setName(request.name());
-        service.setDescription(request.description());
-        service.setLogoUrl(request.logoUrl());
-        service.setDurationMin(request.durationMin());
-        service.setBufferTimeMin(request.bufferTimeMin() != null ? request.bufferTimeMin() : 0);
-        service.setPrice(request.price());
+        String oldLogoUrl = service.getLogoUrl();
 
-        serviceRepository.save(service);
+        try {
+            if (logo != null && !logo.isEmpty()) {
+                String newLogoUrl = cloudinaryService.uploadImage(logo, CLOUDINARY_FOLDER);
+                service.setLogoUrl(newLogoUrl);
+
+                if (oldLogoUrl != null && !oldLogoUrl.isEmpty()) {
+                    cloudinaryService.deleteImage(oldLogoUrl);
+                }
+            }
+
+            service.setCategory(category);
+            service.setName(request.name());
+            service.setDescription(request.description());
+            service.setDurationMin(request.durationMin());
+            service.setBufferTimeMin(request.bufferTimeMin() != null ? request.bufferTimeMin() : 0);
+            service.setPrice(request.price());
+
+            serviceRepository.save(service);
+            log.info("Servicio actualizado exitosamente: {}", service.getName());
+
+        } catch (Exception e) {
+            log.error("Error al actualizar servicio: {}", e.getMessage(), e);
+            throw new BadRequestException("Error al actualizar el servicio: " + e.getMessage());
+        }
     }
 
     @Transactional
     public void delete(Integer id) {
         com.marisoft.booking.service.Service service = findById(id);
+
+        if (service.getLogoUrl() != null && !service.getLogoUrl().isEmpty()) {
+            cloudinaryService.deleteImage(service.getLogoUrl());
+        }
+
         serviceRepository.delete(service);
+        log.info("Servicio eliminado exitosamente: {}", service.getName());
     }
 
     @Transactional(readOnly = true)
     public List<PublicServiceDto.Category> findAllPublic() {
-        List<Service> allServices = serviceRepository.findAll();
+        List<com.marisoft.booking.service.Service> allServices = serviceRepository.findAll();
 
-        Map<Category, List<Service>> servicesByCategory = allServices.stream()
-                .collect(Collectors.groupingBy(Service::getCategory));
+        Map<Category, List<com.marisoft.booking.service.Service>> servicesByCategory = allServices.stream()
+                .collect(Collectors.groupingBy(com.marisoft.booking.service.Service::getCategory));
 
         return servicesByCategory.entrySet().stream()
                 .map(entry -> new PublicServiceDto.Category(
