@@ -28,11 +28,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class BookingController {
 
     private final BookingService bookingService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<Response> getAllBookings() {
         return bookingService.findAll().stream()
@@ -40,11 +40,13 @@ public class BookingController {
                 .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Response getBookingById(@PathVariable Integer id) {
         return Response.fromEntity(bookingService.findById(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/customer/{customerId}")
     public List<Response> getBookingsByCustomer(@PathVariable Integer customerId) {
         return bookingService.findByCustomer(customerId).stream()
@@ -52,6 +54,7 @@ public class BookingController {
                 .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/status/{status}")
     public List<Response> getBookingsByStatus(@PathVariable String status) {
         return bookingService.findByStatus(status).stream()
@@ -77,6 +80,7 @@ public class BookingController {
         return new MessageResponse("Reserva creada exitosamente");
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public MessageResponse updateBooking(
             @PathVariable Integer id,
@@ -95,6 +99,7 @@ public class BookingController {
         return new MessageResponse("Estado actualizado exitosamente");
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public MessageResponse deleteBooking(@PathVariable Integer id) {
         bookingService.delete(id);
