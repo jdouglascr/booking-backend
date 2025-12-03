@@ -1,5 +1,8 @@
 package com.marisoft.booking.user;
 
+import com.marisoft.booking.booking.BookingRepository;
+import com.marisoft.booking.resource.ResourceRepository;
+import com.marisoft.booking.shared.enums.BookingStatus;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.user.UserDto.CreateRequest;
@@ -9,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -17,6 +21,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ResourceRepository resourceRepository;
+    private final BookingRepository bookingRepository;
 
     @Transactional(readOnly = true)
     public List<User> findAll() {
@@ -82,6 +88,15 @@ public class UserService {
     @Transactional
     public void delete(Integer id) {
         User user = findById(id);
+
+        if (resourceRepository.existsByUserId(id)) {
+            throw new BadRequestException("No se puede eliminar el usuario porque tiene recursos asignados");
+        }
+
+        if (bookingRepository.existsFutureBookingsByUserId(id, LocalDateTime.now(), BookingStatus.CANCELADA)) {
+            throw new BadRequestException("No se puede eliminar el usuario porque sus recursos tienen reservas futuras programadas");
+        }
+
         userRepository.delete(user);
     }
 

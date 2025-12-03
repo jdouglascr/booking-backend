@@ -2,6 +2,7 @@ package com.marisoft.booking.category;
 
 import com.marisoft.booking.category.CategoryDto.CreateRequest;
 import com.marisoft.booking.category.CategoryDto.UpdateRequest;
+import com.marisoft.booking.service.ServiceRepository;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ServiceRepository serviceRepository;
 
     @Transactional(readOnly = true)
     public List<Category> findAll() {
@@ -55,6 +57,13 @@ public class CategoryService {
     @Transactional
     public void delete(Integer id) {
         Category category = findById(id);
+
+        if (serviceRepository.existsByCategoryId(id)) {
+            throw new BadRequestException(
+                    "No se puede eliminar la categoría porque tiene servicios asociados"
+            );
+        }
+
         categoryRepository.delete(category);
     }
 }

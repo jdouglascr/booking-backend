@@ -1,26 +1,29 @@
 package com.marisoft.booking.service;
 
+import com.marisoft.booking.booking.BookingRepository;
 import com.marisoft.booking.category.Category;
 import com.marisoft.booking.category.CategoryService;
+import com.marisoft.booking.resource.ResourceServiceRepository;
 import com.marisoft.booking.service.ServiceDto.CreateRequest;
 import com.marisoft.booking.service.ServiceDto.UpdateRequest;
+import com.marisoft.booking.shared.enums.BookingStatus;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.shared.images.CloudinaryService;
 import com.marisoft.booking.website.dto.PublicServiceDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service
+@org.springframework.stereotype.Service
 @RequiredArgsConstructor
 @Slf4j
 public class ServiceService {
@@ -28,22 +31,24 @@ public class ServiceService {
     private final ServiceRepository serviceRepository;
     private final CategoryService categoryService;
     private final CloudinaryService cloudinaryService;
+    private final BookingRepository bookingRepository;
+    private final ResourceServiceRepository resourceServiceRepository;
 
     private static final String CLOUDINARY_FOLDER = "services";
 
     @Transactional(readOnly = true)
-    public List<com.marisoft.booking.service.Service> findAll() {
+    public List<Service> findAll() {
         return serviceRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public List<com.marisoft.booking.service.Service> findByCategory(Integer categoryId) {
+    public List<Service> findByCategory(Integer categoryId) {
         categoryService.findById(categoryId);
         return serviceRepository.findByCategoryId(categoryId);
     }
 
     @Transactional(readOnly = true)
-    public com.marisoft.booking.service.Service findById(Integer id) {
+    public Service findById(Integer id) {
         return serviceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Servicio no encontrado"));
     }
@@ -61,7 +66,7 @@ public class ServiceService {
             logoUrl = cloudinaryService.uploadImage(logo, CLOUDINARY_FOLDER);
         }
 
-        com.marisoft.booking.service.Service service = com.marisoft.booking.service.Service.builder()
+        Service service = Service.builder()
                 .category(category)
                 .name(request.name())
                 .description(request.description())
@@ -77,7 +82,7 @@ public class ServiceService {
 
     @Transactional
     public void update(Integer id, UpdateRequest request, MultipartFile logo) {
-        com.marisoft.booking.service.Service service = findById(id);
+        Service service = findById(id);
         Category category = categoryService.findById(request.categoryId());
 
         if (!service.getCategory().getId().equals(request.categoryId()) ||
@@ -118,7 +123,17 @@ public class ServiceService {
 
     @Transactional
     public void delete(Integer id) {
-        com.marisoft.booking.service.Service service = findById(id);
+        Service service = findById(id);
+
+        if (bookingRepository.existsFutureBookingsByServiceId(id, LocalDateTime.now(), BookingStatus.CANCELADA)) {
+            throw new BadRequestException("No se puede eliminar el servicio porque tiene reservas futuras programadas");
+        }
+
+        if (resourceServiceRepository.existsByServiceId(id)) {
+            throw new BadRequestException(
+                    "No se puede eliminar el servicio porque tiene recursos asignados. Primero desasigne el servicio de todos los recursos"
+            );
+        }
 
         if (service.getLogoUrl() != null && !service.getLogoUrl().isEmpty()) {
             cloudinaryService.deleteImage(service.getLogoUrl());
@@ -130,10 +145,10 @@ public class ServiceService {
 
     @Transactional(readOnly = true)
     public List<PublicServiceDto.Category> findAllPublic() {
-        List<com.marisoft.booking.service.Service> allServices = serviceRepository.findAll();
+        List<Service> allServices = serviceRepository.findAll();
 
-        Map<Category, List<com.marisoft.booking.service.Service>> servicesByCategory = allServices.stream()
-                .collect(Collectors.groupingBy(com.marisoft.booking.service.Service::getCategory));
+        Map<Category, List<Service>> servicesByCategory = allServices.stream()
+                .collect(Collectors.groupingBy(Service::getCategory));
 
         return servicesByCategory.entrySet().stream()
                 .map(entry -> new PublicServiceDto.Category(

@@ -1,9 +1,11 @@
 package com.marisoft.booking.resource;
 
+import com.marisoft.booking.booking.BookingRepository;
 import com.marisoft.booking.resource.ResourceDto.CreateTextData;
 import com.marisoft.booking.resource.ResourceDto.UpdateTextData;
 import com.marisoft.booking.service.Service;
 import com.marisoft.booking.service.ServiceService;
+import com.marisoft.booking.shared.enums.BookingStatus;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.shared.images.CloudinaryService;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @org.springframework.stereotype.Service
@@ -26,6 +29,8 @@ public class ResourceServiceLayer {
     private final UserService userService;
     private final ServiceService serviceService;
     private final CloudinaryService cloudinaryService;
+    private final BookingRepository bookingRepository;
+
     private static final String CLOUDINARY_FOLDER = "resources";
 
     @Transactional(readOnly = true)
@@ -140,6 +145,10 @@ public class ResourceServiceLayer {
     @Transactional
     public void delete(Integer id) {
         Resource resource = findById(id);
+
+        if (bookingRepository.existsFutureBookingsByResourceId(id, LocalDateTime.now(), BookingStatus.CANCELADA)) {
+            throw new BadRequestException("No se puede eliminar el recurso porque tiene reservas futuras programadas");
+        }
 
         if (resource.getImageUrl() != null && !resource.getImageUrl().isEmpty()) {
             cloudinaryService.deleteImage(resource.getImageUrl());

@@ -17,6 +17,8 @@ public interface ResourceRepository extends JpaRepository<Resource, Integer> {
 
     List<Resource> findByUserId(Integer userId);
 
+    boolean existsByUserId(Integer userId);
+
     @Query("SELECT r FROM Resource r LEFT JOIN FETCH r.resourceServices rs LEFT JOIN FETCH rs.service WHERE r.id = :id")
     Optional<Resource> findByIdWithServices(@Param("id") Integer id);
 

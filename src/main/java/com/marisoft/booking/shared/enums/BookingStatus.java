@@ -1,23 +1,19 @@
 package com.marisoft.booking.shared.enums;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Getter;
 
+@Getter
 public enum BookingStatus {
-    PENDIENTE("PENDIENTE"),
-    CONFIRMADA("CONFIRMADA"),
-    PAGADA("PAGADA"),
-    COMPLETADA("COMPLETADA"),
-    CANCELADA("CANCELADA");
+    PENDIENTE("Pendiente"),
+    CONFIRMADA("Confirmada"),
+    PAGADA("Pagada"),
+    COMPLETADA("Completada"),
+    CANCELADA("Cancelada");
 
     private final String displayName;
 
     BookingStatus(String displayName) {
         this.displayName = displayName;
-    }
-
-    @JsonValue
-    public String getDisplayName() {
-        return displayName;
     }
 
     public static BookingStatus fromString(String status) {
@@ -26,15 +22,6 @@ public enum BookingStatus {
                 return bs;
             }
         }
-        throw new IllegalArgumentException("Estado inválido: " + status);
-    }
-
-    public static boolean isValid(String status) {
-        try {
-            fromString(status);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+        throw new IllegalArgumentException("Estado no válido: " + status);
     }
 }
