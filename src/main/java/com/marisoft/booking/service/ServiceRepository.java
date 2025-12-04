@@ -13,4 +13,6 @@ public interface ServiceRepository extends JpaRepository<Service, Integer> {
     boolean existsByCategoryIdAndName(Integer categoryId, String name);
 
     boolean existsByCategoryIdAndNameAndIdNot(Integer categoryId, String name, Integer id);
+
+    boolean existsByCategoryId(Integer categoryId);
 }

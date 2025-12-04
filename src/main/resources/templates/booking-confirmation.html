@@ -163,16 +163,6 @@
             flex-grow: 1;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
         /* Botones de acción */
         .button-container {
             text-align: center;
@@ -208,7 +198,7 @@
             border-color: #dc3545;
         }
 
-        /* Importante: Forzar color de los enlaces */
+        /* Forzar color de los enlaces */
         a.btn-confirm,
         a.btn-confirm:visited,
         a.btn-confirm:hover,
@@ -324,6 +314,11 @@
                 <h3>📋 Detalles de tu reserva</h3>
 
                 <div class="detail-row">
+                    <span class="detail-label">Nº Reserva</span>
+                    <span class="detail-value">#{{bookingId}}</span>
+                </div>
+
+                <div class="detail-row">
                     <span class="detail-label">Servicio</span>
                     <span class="detail-value">{{serviceName}}</span>
                 </div>
@@ -346,13 +341,6 @@
                 <div class="detail-row">
                     <span class="detail-label">Precio</span>
                     <span class="detail-value">{{price}}</span>
-                </div>
-
-                <div class="detail-row">
-                    <span class="detail-label">Estado</span>
-                    <span class="detail-value">
-                            <span class="status-badge">{{status}}</span>
-                        </span>
                 </div>
             </div>
 

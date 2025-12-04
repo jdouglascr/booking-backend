@@ -49,7 +49,7 @@ public class Resource {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "image_url", length = 500)
+    @Column(name = "image_url", nullable = false, length = 500)
     private String imageUrl;
 
     @Builder.Default
@@ -72,10 +72,5 @@ public class Resource {
     public void addService(ResourceService resourceService) {
         resourceServices.add(resourceService);
         resourceService.setResource(this);
-    }
-
-    public void removeService(ResourceService resourceService) {
-        resourceServices.remove(resourceService);
-        resourceService.setResource(null);
     }
 }

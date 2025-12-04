@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class BookingEmailDto {
+    private Integer bookingId;
     private String confirmationToken;
     private String customerFirstName;
     private String customerLastName;
@@ -18,10 +19,10 @@ public class BookingEmailDto {
     private LocalDateTime startDatetime;
     private LocalDateTime endDatetime;
     private Integer price;
-    private String status;
 
     public static BookingEmailDto fromEntity(Booking booking) {
         return BookingEmailDto.builder()
+                .bookingId(booking.getId())
                 .confirmationToken(booking.getConfirmationToken())
                 .customerFirstName(booking.getCustomer().getFirstName())
                 .customerLastName(booking.getCustomer().getLastName())
@@ -31,7 +32,6 @@ public class BookingEmailDto {
                 .startDatetime(booking.getStartDatetime())
                 .endDatetime(booking.getEndDatetime())
                 .price(booking.getPrice())
-                .status(booking.getStatus())
                 .build();
     }
 }

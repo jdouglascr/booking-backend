@@ -1,7 +1,9 @@
 package com.marisoft.booking.customer;
 
+import com.marisoft.booking.booking.BookingRepository;
 import com.marisoft.booking.customer.CustomerDto.CreateRequest;
 import com.marisoft.booking.customer.CustomerDto.UpdateRequest;
+import com.marisoft.booking.shared.enums.BookingStatus;
 import com.marisoft.booking.shared.exception.BadRequestException;
 import com.marisoft.booking.shared.exception.NotFoundException;
 import com.marisoft.booking.website.dto.PublicCustomerDto;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -16,6 +19,7 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final BookingRepository bookingRepository;
 
     @Transactional(readOnly = true)
     public List<Customer> findAll() {
@@ -71,6 +75,11 @@ public class CustomerService {
     @Transactional
     public void delete(Integer id) {
         Customer customer = findById(id);
+
+        if (bookingRepository.existsFutureBookingsByCustomerId(id, LocalDateTime.now(), BookingStatus.CANCELADA)) {
+            throw new BadRequestException("No se puede eliminar el cliente porque tiene reservas futuras programadas");
+        }
+
         customerRepository.delete(customer);
     }
 

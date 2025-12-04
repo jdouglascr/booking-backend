@@ -15,6 +15,8 @@ public interface ResourceServiceRepository extends JpaRepository<ResourceService
 
     List<ResourceService> findByServiceId(Integer serviceId);
 
+    boolean existsByServiceId(Integer serviceId);
+
     @Modifying
     @Query("DELETE FROM ResourceService rs WHERE rs.resource.id = :resourceId")
     void deleteByResourceId(@Param("resourceId") Integer resourceId);

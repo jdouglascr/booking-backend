@@ -1,5 +1,11 @@
 package com.marisoft.booking.website;
 
+import com.marisoft.booking.auth.AuthDto.LoginRequest;
+import com.marisoft.booking.auth.AuthDto.LoginResponse;
+import com.marisoft.booking.auth.AuthDto.RefreshTokenRequest;
+import com.marisoft.booking.auth.AuthDto.RefreshTokenResponse;
+import com.marisoft.booking.auth.AuthService;
+import com.marisoft.booking.availability.AvailabilityService;
 import com.marisoft.booking.booking.Booking;
 import com.marisoft.booking.booking.BookingService;
 import com.marisoft.booking.business.Business;
@@ -10,6 +16,7 @@ import com.marisoft.booking.customer.CustomerService;
 import com.marisoft.booking.resource.ResourceServiceLayer;
 import com.marisoft.booking.service.ServiceService;
 import com.marisoft.booking.shared.dto.MessageResponse;
+import com.marisoft.booking.website.dto.PublicAvailabilityDto;
 import com.marisoft.booking.website.dto.PublicBookingDto;
 import com.marisoft.booking.website.dto.PublicBusinessDto;
 import com.marisoft.booking.website.dto.PublicCustomerDto;
@@ -17,30 +24,60 @@ import com.marisoft.booking.website.dto.PublicResourceDto;
 import com.marisoft.booking.website.dto.PublicServiceDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
 public class PublicController {
 
+    private final AuthService authService;
     private final BusinessService businessService;
     private final BusinessHourRepository businessHourRepository;
     private final ServiceService serviceService;
     private final ResourceServiceLayer resourceService;
     private final CustomerService customerService;
     private final BookingService bookingService;
+    private final AvailabilityService availabilityService;
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> health() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("timestamp", LocalDateTime.now());
+        health.put("service", "booking-backend");
+        health.put("version", "1.0.0");
+
+        return ResponseEntity.ok(health);
+    }
+
+    @PostMapping("/auth/login")
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
+
+    @PostMapping("/auth/refresh")
+    public RefreshTokenResponse refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return authService.refreshToken(request);
+    }
 
     @GetMapping("/business")
     public PublicBusinessDto getBusinessInfo() {
@@ -119,5 +156,13 @@ public class PublicController {
     }
 
     public record CancelRequest(String reason) {
+    }
+
+    @GetMapping("/availability/{resourceServiceId}/week")
+    public PublicAvailabilityDto.WeekAvailabilityResponse getWeekAvailability(
+            @PathVariable Integer resourceServiceId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate
+    ) {
+        return availabilityService.getWeekAvailability(resourceServiceId, startDate);
     }
 }

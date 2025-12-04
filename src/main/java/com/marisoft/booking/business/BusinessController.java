@@ -1,11 +1,14 @@
 package com.marisoft.booking.business;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marisoft.booking.business.BusinessDto.CreateTextData;
-import com.marisoft.booking.business.BusinessDto.Response;
-import com.marisoft.booking.business.BusinessDto.UpdateTextData;
+import com.marisoft.booking.business.BusinessWithHoursDto.Response;
+import com.marisoft.booking.business.BusinessWithHoursDto.UpdateRequest;
 import com.marisoft.booking.shared.dto.MessageResponse;
+import com.marisoft.booking.shared.exception.BadRequestException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,14 +25,16 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/business")
 @RequiredArgsConstructor
+@Slf4j
 public class BusinessController {
 
     private final BusinessService businessService;
+    private final ObjectMapper objectMapper;
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public Response getBusiness() {
-        return Response.fromEntity(businessService.get());
+    public Response getBusinessWithHours() {
+        return businessService.getBusinessWithHours();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -46,12 +51,18 @@ public class BusinessController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public MessageResponse updateBusiness(
-            @Valid @ModelAttribute UpdateTextData data,
+    public MessageResponse updateBusinessWithHours(
+            @RequestParam("data") String jsonData,
             @RequestParam(value = "logo", required = false) MultipartFile logo,
             @RequestParam(value = "banner", required = false) MultipartFile banner
     ) {
-        businessService.update(data, logo, banner);
-        return new MessageResponse("Información del negocio actualizada exitosamente");
+        try {
+            UpdateRequest request = objectMapper.readValue(jsonData, UpdateRequest.class);
+            businessService.updateBusinessWithHours(request, logo, banner);
+            return new MessageResponse("Información del negocio y horarios actualizados exitosamente");
+        } catch (Exception e) {
+            log.error("Error al procesar la actualización: {}", e.getMessage(), e);
+            throw new BadRequestException("Error al procesar los datos: " + e.getMessage());
+        }
     }
 }

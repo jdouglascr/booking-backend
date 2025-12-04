@@ -43,7 +43,10 @@ public class EmailService {
     public void sendBookingConfirmationEmail(BookingEmailDto bookingDto, String logoUrl, String bannerUrl) {
         try {
             String htmlContent = buildEmailContent(bookingDto, logoUrl, bannerUrl);
-            String subject = "Confirma tu reserva - " + bookingDto.getServiceName();
+
+            String subject = String.format("Reserva #%d - %s - Confirma tu asistencia",
+                    bookingDto.getBookingId(),
+                    bookingDto.getServiceName());
 
             sendHtmlEmail(bookingDto.getCustomerEmail(), subject, htmlContent);
 
@@ -98,6 +101,7 @@ public class EmailService {
 
         assert logoUrl != null && bannerUrl != null;
         return template
+                .replace("{{bookingId}}", booking.getBookingId().toString())
                 .replace("{{customerName}}", customerName)
                 .replace("{{serviceName}}", serviceName)
                 .replace("{{resourceName}}", resourceName)
@@ -105,7 +109,6 @@ public class EmailService {
                 .replace("{{startTime}}", startTime)
                 .replace("{{endTime}}", endTime)
                 .replace("{{price}}", price)
-                .replace("{{status}}", booking.getStatus())
                 .replace("{{confirmUrl}}", confirmUrl)
                 .replace("{{cancelUrl}}", cancelUrl)
                 .replace("{{logoUrl}}", logoUrl)

@@ -11,7 +11,7 @@ import java.util.List;
 
 public sealed interface ResourceDto {
 
-    record CreateRequest(
+    record CreateTextData(
             @NotNull(message = "El usuario responsable es obligatorio")
             Integer userId,
 
@@ -24,16 +24,13 @@ public sealed interface ResourceDto {
             String resourceType,
 
             String description,
-
-            @Size(max = 500, message = "La URL de la imagen no puede exceder 500 caracteres")
-            String imageUrl,
 
             @NotEmpty(message = "Debe asignar al menos un servicio")
             List<Integer> serviceIds
     ) implements ResourceDto {
     }
 
-    record UpdateRequest(
+    record UpdateTextData(
             @NotNull(message = "El usuario responsable es obligatorio")
             Integer userId,
 
@@ -46,9 +43,6 @@ public sealed interface ResourceDto {
             String resourceType,
 
             String description,
-
-            @Size(max = 500, message = "La URL de la imagen no puede exceder 500 caracteres")
-            String imageUrl,
 
             @NotEmpty(message = "Debe asignar al menos un servicio")
             List<Integer> serviceIds
@@ -106,14 +100,16 @@ public sealed interface ResourceDto {
             Integer id,
             String name,
             String resourceType,
-            String userName
+            String userName,
+            String imageUrl
     ) implements ResourceDto {
         public static SimpleResponse fromEntity(Resource resource) {
             return new SimpleResponse(
                     resource.getId(),
                     resource.getName(),
                     resource.getResourceType(),
-                    resource.getUser().getFullName()
+                    resource.getUser().getFullName(),
+                    resource.getImageUrl()
             );
         }
     }
