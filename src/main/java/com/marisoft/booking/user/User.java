@@ -14,6 +14,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +25,8 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
+@SQLDelete(sql = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP, is_active = false WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class User extends Person {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -38,6 +42,9 @@ public class User extends Person {
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @PrePersist
     @Override

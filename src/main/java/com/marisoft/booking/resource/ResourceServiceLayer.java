@@ -150,10 +150,7 @@ public class ResourceServiceLayer {
             throw new BadRequestException("No se puede eliminar el recurso porque tiene reservas futuras programadas");
         }
 
-        if (resource.getImageUrl() != null && !resource.getImageUrl().isEmpty()) {
-            cloudinaryService.deleteImage(resource.getImageUrl());
-            log.info("Imagen eliminada de Cloudinary para recurso: {}", resource.getName());
-        }
+        resource.getResourceServices().forEach(resourceServiceRepository::delete);
 
         resourceRepository.delete(resource);
     }

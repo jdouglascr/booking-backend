@@ -3,6 +3,7 @@ package com.marisoft.booking.service;
 import com.marisoft.booking.booking.BookingRepository;
 import com.marisoft.booking.category.Category;
 import com.marisoft.booking.category.CategoryService;
+import com.marisoft.booking.resource.ResourceService;
 import com.marisoft.booking.resource.ResourceServiceRepository;
 import com.marisoft.booking.service.ServiceDto.CreateRequest;
 import com.marisoft.booking.service.ServiceDto.UpdateRequest;
@@ -129,18 +130,10 @@ public class ServiceService {
             throw new BadRequestException("No se puede eliminar el servicio porque tiene reservas futuras programadas");
         }
 
-        if (resourceServiceRepository.existsByServiceId(id)) {
-            throw new BadRequestException(
-                    "No se puede eliminar el servicio porque tiene recursos asignados. Primero desasigne el servicio de todos los recursos"
-            );
-        }
-
-        if (service.getLogoUrl() != null && !service.getLogoUrl().isEmpty()) {
-            cloudinaryService.deleteImage(service.getLogoUrl());
-        }
+        List<ResourceService> resourceServices = resourceServiceRepository.findByServiceId(id);
+        resourceServices.forEach(resourceServiceRepository::delete);
 
         serviceRepository.delete(service);
-        log.info("Servicio eliminado exitosamente: {}", service.getName());
     }
 
     @Transactional(readOnly = true)
